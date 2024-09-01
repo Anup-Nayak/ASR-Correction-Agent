@@ -70,7 +70,7 @@ class Agent(object):
         self.best_words[idx] = ans 
         self.best_word = self.best_words[idx][0]
 
-    def sentence_optimize(self,beam_depth,small_beam_depth,epsilon):
+    def sentence_optimize(self,beam_depth,beam_size,small_beam_depth,epsilon):
         self.best_cost = self.cost(self.best_state)
         words = self.best_state.split()
         self.current_state = self.best_state
@@ -80,6 +80,23 @@ class Agent(object):
             words[i] = self.best_word
             self.current_state = ' '.join(words)
             self.best_state  = self.current_state
+        # for _ in range(beam_depth):
+        #     prq = PriorityQueue()
+        #     for cs in self.current_state:
+        #         cs_words = cs.split(' ')
+        #         for i,word in enumerate(cs_words):
+        #             for pos_rep in self.best_words[i]:
+        #                 new_sol = ' '.join(cs_words[:i]+[pos_rep]+cs_words[i+1:])
+        #                 cost = self.cost_fn(new_sol)
+        #                 prq.put((cost, new_sol))
+        #     next_beam = []
+        #     for _ in range(beam_size):
+        #         possol = prq.get()
+        #         next_beam.append(possol[1])
+        #         if (possol[0] < self.cost_fn(self.best_state)):
+        #             self.best_cost = possol[0]
+        #             self.best_state = possol[1]
+        #     self.current_state = next_beam
     def cost(self,text):
         return self.environment.compute_cost(text)
     def asr_corrector(self, environment):
@@ -103,6 +120,6 @@ class Agent(object):
             if(len(rep) not in self.replacement_lens):
                 self.replacement_lens.append(len(rep))
         self.best_words = [None for _ in words]
-        self.sentence_optimize(beam_depth=4,small_beam_depth=3,epsilon=0.035)
+        self.sentence_optimize(beam_depth=4,small_beam_depth=3,epsilon=0.035,beam_size=40)
             
 

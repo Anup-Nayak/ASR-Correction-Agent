@@ -91,7 +91,7 @@ def main():
     corrected_texts = []
     
     start = time.time()
-    for sample in tqdm(data[:3]):
+    for sample in tqdm(data[:1]):
         audio = sample['audio']['array']
         sr = sample['audio']['sampling_rate']
         text = sample['text']

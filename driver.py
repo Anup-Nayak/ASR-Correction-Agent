@@ -3,7 +3,7 @@ import json
 import argparse
 from tqdm import tqdm
 from copy import deepcopy
-
+import time 
 import torch
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 
@@ -82,14 +82,16 @@ def main():
 
     with open(args.vocab_file, 'r') as fp:
         vocabulary = json.load(fp)
-
+    
     cost_model = CostModel()
 
     from solution import Agent
     agent = Agent(phoneme_table, vocabulary)
 
     corrected_texts = []
-    for sample in tqdm(data):
+    
+    start = time.time()
+    for sample in tqdm(data[:3]):
         audio = sample['audio']['array']
         sr = sample['audio']['sampling_rate']
         text = sample['text']
@@ -103,7 +105,8 @@ def main():
             pred = None
 
         corrected_texts.append(pred)
-
+    end = time.time()
+    print(f"Duration: {end-start}")
     with open(args.output_file, 'w') as fp:
         json.dump(corrected_texts, fp, indent=2)
 

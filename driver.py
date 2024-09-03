@@ -91,18 +91,20 @@ def main():
     corrected_texts = []
     
     start = time.time()
-    for sample in tqdm(data[:1]):
+    # l = [11,15,17,20,26,29,38,53,54,63,66,67]
+    # data = [data[i] for i in l]
+    for sample in tqdm(data[66:67]):
         audio = sample['audio']['array']
         sr = sample['audio']['sampling_rate']
         text = sample['text']
         cost_model.set_audio(audio, sr)
         environment = Environment(text, cost_model.get_loss, phoneme_table)
 
-        try:
-            agent.asr_corrector(environment)
-            pred = agent.best_state
-        except:
-            pred = None
+        # try:
+        agent.asr_corrector(environment)
+        pred = agent.best_state
+        # except:
+        #     pred = None
 
         corrected_texts.append(pred)
     end = time.time()

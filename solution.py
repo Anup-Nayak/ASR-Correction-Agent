@@ -76,27 +76,71 @@ class Agent(object):
         self.current_state = self.best_state
         best_words = [[] for _ in words ]
         for i,word in enumerate(words):
-            self.optimize_word(word,i,beam_depth = small_beam_depth,epsilon= epsilon)
+            self.optimize_word(word,i,beam_size = 300,beam_depth = small_beam_depth,epsilon= epsilon,best_n=10)
             words[i] = self.best_word
             self.current_state = ' '.join(words)
             self.best_state  = self.current_state
-        # for _ in range(beam_depth):
-        #     prq = PriorityQueue()
-        #     for cs in self.current_state:
-        #         cs_words = cs.split(' ')
-        #         for i,word in enumerate(cs_words):
-        #             for pos_rep in self.best_words[i]:
-        #                 new_sol = ' '.join(cs_words[:i]+[pos_rep]+cs_words[i+1:])
-        #                 cost = self.cost_fn(new_sol)
-        #                 prq.put((cost, new_sol))
-        #     next_beam = []
-        #     for _ in range(beam_size):
-        #         possol = prq.get()
-        #         next_beam.append(possol[1])
-        #         if (possol[0] < self.cost_fn(self.best_state)):
-        #             self.best_cost = possol[0]
-        #             self.best_state = possol[1]
-        #     self.current_state = next_beam
+        
+        current_state = self.best_state
+        prq = PriorityQueue()
+        for _ in range(beam_depth):
+            bs_words = current_state.split(' ')
+            best_cost = self.cost(current_state)
+            for i, word in enumerate(bs_words):
+                replacement_words = self.best_words[i]
+                current_word = word
+                for word1 in replacement_words:
+                    bs_words[i] = word1
+                    sentence_potential = ' '.join(bs_words)
+                    cost_potential = self.cost(sentence_potential)
+                    prq.put((-1*cost_potential,sentence_potential))
+                    if(prq.qsize()>beam_size):
+                        prq.get()
+                    if cost_potential<best_cost:
+                        best_cost = cost_potential
+                        current_state = sentence_potential
+                        current_word = bs_words[i]
+                bs_words[i] = current_word
+        self.best_state = current_state
+    
+    def add_words(self,k):
+        current_sentence = self.best_state
+        self.best_cost = self.cost(self.best_state)
+        
+        prq1 = PriorityQueue()
+        for word in self.vocabulary:
+            new_sentence = word + " " + current_sentence
+            c1 = self.cost(new_sentence)
+            if c1 < self.best_cost:
+                self.best_state = new_sentence
+                self.best_cost = c1
+
+            prq1.put((-1*c1,word))
+            if prq1.qsize() >= k:
+                prq1.get()
+        
+        prq2 = PriorityQueue()
+        for word in self.vocabulary:
+            new_sentence = current_sentence  + " " + word
+            c1 = self.cost(new_sentence)
+            if c1 < self.best_cost:
+                self.best_state = new_sentence
+                self.best_cost = c1
+            
+            prq2.put((-1*c1,word))
+            if prq2.qsize() >= k:
+                prq2.get()
+    
+        list1 = [prq1.get()[1] for _ in range(prq1.qsize())]
+        list2 = [prq2.get()[1] for _ in range(prq2.qsize())]
+        
+        for elem1 in list1:
+            for elem2 in list2:
+                new_sentence = elem1 + " " +  current_sentence + " " + elem2
+                c1 = self.cost(new_sentence)
+                if c1 < self.best_cost:
+                    self.best_state = new_sentence
+                    self.best_cost = c1
     def cost(self,text):
         return self.environment.compute_cost(text)
     def asr_corrector(self, environment):
@@ -120,6 +164,7 @@ class Agent(object):
             if(len(rep) not in self.replacement_lens):
                 self.replacement_lens.append(len(rep))
         self.best_words = [None for _ in words]
-        self.sentence_optimize(beam_depth=4,small_beam_depth=3,epsilon=0.035,beam_size=40)
+        self.sentence_optimize(beam_depth=4,small_beam_depth=3,epsilon=0.020,beam_size=20)
+        self.add_words(10)
             
 
